@@ -1,0 +1,9 @@
+name: blog
+assetBasePath: "./resources/blog"
+routes: 
+  - path: "/blog/api/v1/posts"
+    method: "GET"
+    onSuccess: "/posts/200.json"
+  - path: "/blog/api/v1/posts/{id}/comments"
+    method: "GET"
+    onSuccess: "/comments/200.json"

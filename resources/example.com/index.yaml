@@ -1,0 +1,6 @@
+name: example
+assetBasePath: "./resources/example.com/"
+routes: 
+  - path: /example.com/say-hello
+    method: "GET"
+    onSuccess: "say-hello.json"
