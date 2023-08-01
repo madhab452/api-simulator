@@ -19,6 +19,7 @@ curl http://localhost:1949/blog/api/v1/posts
 
 ## todo
 
-- Enable using variable in json: eg: `{ "message": "Hello {{macro()}}" }` should return the result of macro()
+- Allow `eg:macro()` to generate dynamic values: in json: eg: `{ "message": "Hello {{macro()}}" }` should return the result of macro()
 - Add proxy support
 - Add variable that simulates real environment. eg delays and timeouts.
+- Allow passing dynamic values eg: /blog/api/v1/posts/{id}/comments 
