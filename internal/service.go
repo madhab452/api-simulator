@@ -21,9 +21,10 @@ type Options struct {
 }
 
 type Route struct {
-	Path      string `yaml:"path"`
-	Method    string `yaml:"method"`
-	OnSuccess string `yaml:"onSuccess"`
+	Path      string              `yaml:"path"`
+	Method    string              `yaml:"method"`
+	OnSuccess string              `yaml:"onSuccess"`
+	ResHeader []map[string]string `yaml:"resHeader"`
 }
 
 type Conf struct {
@@ -64,6 +65,7 @@ func New(opt Options) *Service {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Default().Println("received req: ", r.RequestURI)
 		for _, config := range configs {
 			for _, route := range config.Routes {
 				if route.Path == r.RequestURI { // match
@@ -73,8 +75,13 @@ func New(opt Options) *Service {
 						log.Println(err.Error())
 						return
 					}
+					for _, h := range route.ResHeader {
+						for k, v := range h {
+							// w.Header().Add("content-type", "application/json")
+							w.Header().Add(k, v)
+						}
+					}
 
-					w.Header().Add("content-type", "application/json")
 					w.Write(fContents)
 					return
 				}
