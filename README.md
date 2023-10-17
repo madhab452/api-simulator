@@ -12,13 +12,14 @@ curl http://localhost:1949/{your-defined-api-path}
 
 ## an example:
 
-curl http://localhost:1949/example.com/say-hello
+curl http://localhost:1950/greeter.com/say-hello
 
 curl http://localhost:1949/blog/api/v1/posts
 
 
 ## todo
 
+- Support grpc protocol
 - Allow `eg:macro()` to generate dynamic values: in json: eg: `{ "message": "Hello {{macro()}}" }` should return the result of macro()
 - Add proxy support
 - Add variable that simulates real environment. eg delays and timeouts.

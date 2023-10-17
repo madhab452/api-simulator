@@ -1,13 +1,14 @@
 name: blog
-assetBasePath: "./resources/blog"
+listenAddrHTTP: ":1949"
+assetBasePath: "./resources/blog/"
 routes: 
   - path: "/blog/api/v1/posts"
     method: "GET"
     resHeader: 
       - Content-Type: application/json
-    onSuccess: "/posts/200.json"
+    onSuccess: "posts/200.json"
   - path: "/blog/api/v1/posts/{id}/comments"
     method: "GET"
-    onSuccess: "/comments/200.json"
+    onSuccess: "comments/200.json"
     resHeader: 
       - Content-Type: application/json

@@ -1,0 +1,15 @@
+name: greeter
+listenAddrHTTP: ":1950"
+assetBasePath: "./resources/greeter.com/"
+routes: 
+  - path: /greeter.com/say-hello
+    method: "GET"
+    onSuccess: "say-hello.json"
+    resHeader: 
+      - Content-Type: application/json
+  - path: /greeter.com/hello-file
+    method: "GET"
+    resHeader: 
+      - Accept-Ranges: bytes
+      - Content-Type: image/jpeg
+    onSuccess: "hello.jpeg"

@@ -11,13 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ServiceMap struct {
-	Address string
-	Name    string
-}
-
 type Options struct {
-	ServiceMap []ServiceMap
 }
 
 type Route struct {
@@ -28,21 +22,22 @@ type Route struct {
 }
 
 type Conf struct {
-	Name          string `yaml:"name"`
-	AssetBasePath string `yaml:"assetBasePath"`
-	Routes        []Route
+	Name           string `yaml:"name"`
+	ListenAddrHTTP string `yaml:"listenAddrHTTP"`
+	AssetBasePath  string `yaml:"assetBasePath"`
+	Routes         []Route
 }
 
 type Service struct {
+	confs []Conf
 }
 
 func New(opt Options) *Service {
-	var configs []Conf
 	entries, err := os.ReadDir("./resources")
 	if err != nil {
 		log.Fatal(fmt.Errorf("os.ReadDir(): ./resources: %w", err))
 	}
-
+	serv := &Service{}
 	for _, e := range entries {
 		// read all index.yaml inside resources/*/index.yaml
 		fname := fmt.Sprintf("resources/%s/index.yaml", e.Name())
@@ -56,17 +51,19 @@ func New(opt Options) *Service {
 		}
 
 		var conf Conf
-		err2 := yaml.Unmarshal(file, &conf)
-		if err2 != nil {
+		if err := yaml.Unmarshal(file, &conf); err != nil {
 			panic(err)
 		}
-
-		configs = append(configs, conf)
+		serv.confs = append(serv.confs, conf)
 	}
 
+	return serv
+}
+
+func (s *Service) handle() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Default().Println("received req: ", r.RequestURI)
-		for _, config := range configs {
+		for _, config := range s.confs {
 			for _, route := range config.Routes {
 				if route.Path == r.RequestURI { // match
 					jsonPath := config.AssetBasePath + route.OnSuccess
@@ -89,15 +86,18 @@ func New(opt Options) *Service {
 		}
 		log.Printf("route not registered: %s \n", r.RequestURI)
 	})
+}
 
-	for _, v := range opt.ServiceMap {
-		log.Println("starting http server at: ", v.Address)
-		if err := http.ListenAndServe(v.Address, nil); err != nil {
-			log.Fatalf("http.ListenAndServe(%v): %v", v, err)
-		}
+func (s *Service) Start() {
+	for _, c := range s.confs {
+		go func(c Conf) {
+			log.Default().Printf("listening and serving %s at %s \n", c.Name, c.ListenAddrHTTP)
+			http.ListenAndServe(c.ListenAddrHTTP, nil)
+		}(c)
 	}
 
-	return &Service{}
+	s.handle()
+	select {}
 }
 
 func (s *Service) ShutDown() {
