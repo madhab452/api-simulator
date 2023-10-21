@@ -1,5 +1,4 @@
 name: greeting
-listenAddrHTTP: ":1950"
 assetBasePath: "./resources/greeting.com/"
 routes: 
   - path: /greeting.com/greet

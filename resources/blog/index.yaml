@@ -1,5 +1,4 @@
 name: blog
-listenAddrHTTP: ":1949"
 assetBasePath: "./resources/blog/"
 routes: 
   - path: "/blog/api/v1/posts"

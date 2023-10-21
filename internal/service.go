@@ -11,9 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Options struct {
-}
-
 type Route struct {
 	Path      string              `yaml:"path"`
 	Method    string              `yaml:"method"`
@@ -22,22 +19,28 @@ type Route struct {
 }
 
 type Conf struct {
-	Name           string `yaml:"name"`
-	ListenAddrHTTP string `yaml:"listenAddrHTTP"`
-	AssetBasePath  string `yaml:"assetBasePath"`
-	Routes         []Route
+	Name          string `yaml:"name"`
+	AssetBasePath string `yaml:"assetBasePath"`
+	Routes        []Route
+}
+
+type Option struct {
+	ListenAddrHTTP string
 }
 
 type Service struct {
+	Option
 	confs []Conf
 }
 
-func New(opt Options) (*Service, error) {
+func New(opt Option) (*Service, error) {
 	entries, err := os.ReadDir("./resources")
 	if err != nil {
 		slog.Error("os.ReadDir(): ./resources", "error", err)
 	}
-	s := &Service{}
+	s := &Service{
+		Option: opt,
+	}
 	for _, e := range entries {
 		// read all index.yaml inside resources/*/index.yaml
 		fname := fmt.Sprintf("resources/%s/index.yaml", e.Name())
@@ -59,45 +62,37 @@ func New(opt Options) (*Service, error) {
 	return s, nil
 }
 
-func (s *Service) handle() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("receviced req", "uri", r.RequestURI)
-		for _, config := range s.confs {
-			for _, route := range config.Routes {
-				if route.Path == r.RequestURI { // match
-					jsonPath := config.AssetBasePath + route.OnSuccess
-					fContents, err := os.ReadFile(jsonPath)
-					if err != nil {
-						slog.Error(err.Error())
-						return
-					}
-					for _, h := range route.ResHeader {
-						for k, v := range h {
-							w.Header().Add(k, v)
-						}
-					}
-
-					w.Write(fContents)
+func (s *Service) handler(w http.ResponseWriter, r *http.Request) {
+	slog.Info("receviced req", "uri", r.RequestURI)
+	for _, config := range s.confs {
+		for _, route := range config.Routes {
+			if route.Path == r.RequestURI { // match
+				jsonPath := config.AssetBasePath + route.OnSuccess
+				fContents, err := os.ReadFile(jsonPath)
+				if err != nil {
+					slog.Error(err.Error())
 					return
 				}
+				for _, h := range route.ResHeader {
+					for k, v := range h {
+						w.Header().Add(k, v)
+					}
+				}
+
+				w.Write(fContents)
+				return
 			}
 		}
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
-		slog.Error("route not registered", "req uri", r.RequestURI)
-	})
+	}
+	http.NotFoundHandler().ServeHTTP(w, r)
+	slog.Error("route not registered", "req uri", r.RequestURI)
 }
 
 func (s *Service) Start() {
-	for _, c := range s.confs {
-		go func(c Conf) {
-			slog.Info(fmt.Sprintf("listening and serveing %s at %s", c.Name, c.ListenAddrHTTP))
-			http.ListenAndServe(c.ListenAddrHTTP, nil)
-		}(c)
-	}
-
-	s.handle()
-	select {}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", s.handler)
+	slog.Info(fmt.Sprintf("listening and serving at %s", s.Option.ListenAddrHTTP))
+	http.ListenAndServe(s.Option.ListenAddrHTTP, mux)
 }
 
 func (s *Service) ShutDown() {
